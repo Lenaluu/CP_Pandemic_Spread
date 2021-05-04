@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 import random
 
 
-def Task_1(T, S):
+def Task_1(T, S):  # death process
+
     # initial parameters
     No = 20  # time span
     r = 0.1  # decay rate
@@ -28,11 +29,8 @@ def Task_1(T, S):
 
     # plotting
     plot_models(T, S, No, y_log, Y_alg,
-                title='death process with rate $r={}$'.format(r))
-
-
-def Task_2(T, S):
-    pass
+                title='death process with rate $r={}$'.format(r),
+                ylabel='number of particles $N$')
 
 
 def N_log(T, r, No):  # logarithmic model
@@ -47,11 +45,24 @@ def N_alg(T, r, No):  # algorithm realizations
     for t in range(T):
         # num = k-sized list of population elements chosen with replacement
         num = random.choices([0, 1], weights=[r, 1-r], k=N[-1])
-        N.append(int(np.sum(num)))  # sum = new population size
+        # sum = new population size
+        N.append(int(np.sum(num)))
     return np.array(N)
 
 
-def plot_models(T, S, No, y_log, Y_alg, title):
+def Task_2(T, S):  # gene expression
+    pass
+
+
+def Task_3(T, S):  # Verhulst extinction
+    pass
+
+
+def Task_4(T, S):  # SIR model
+    pass
+
+
+def plot_models(T, S, No, y_log, Y_alg, title, ylabel):  # general plotting
     """
     Parameters
     ----------
@@ -87,7 +98,7 @@ def plot_models(T, S, No, y_log, Y_alg, title):
                             + str(S)+' Markov realizations')
     # layout
     plt.xlabel('time')
-    plt.ylabel('number of particles $N$')
+    plt.ylabel(ylabel)
     plt.title(title)
     plt.legend(handles=[l1, l2, l3])
     plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
@@ -101,3 +112,5 @@ def plot_models(T, S, No, y_log, Y_alg, title):
 if __name__ == '__main__':
     Task_1(T=70, S=70)
     Task_2(T=10, S=10)
+    Task_3(T=10, S=10)
+    Task_4(T=10, S=10)
