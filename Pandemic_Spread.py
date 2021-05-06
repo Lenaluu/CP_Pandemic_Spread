@@ -31,7 +31,8 @@ def Task_1(T, S):  # death process
     # plotting
     plot_models(T, S, No, x, y_log, Y_alg,
                 title='death process with rate $r={}$'.format(r),
-                ylabel='number of particles $N$')
+                ylabel='number of particles $N$',
+                ax2_ticks=[0, No], ax2_ticklabels=['0', '$N_0$'])
 
     plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
     plt.show()
@@ -40,7 +41,7 @@ def Task_1(T, S):  # death process
 def N_log(T, r, No):  # logistic model
     N = [No]
     for t in range(T):
-        N.append(N[-1] - r*N[-1])  # mean field eq: N(t+1) = N(t) + dN(t)/dt
+        N.append(N[t] - r*N[t])  # mean field eq: N(t+1) = N(t) + dN(t)/dt
     return np.array(N)
 
 
@@ -48,7 +49,7 @@ def N_alg(T, r, No):  # algorithm realizations
     N = [No]
     for t in range(T):
         # num = k-sized list of population elements chosen with replacement
-        num = random.choices([0, 1], weights=[r, 1-r], k=N[-1])
+        num = random.choices([0, 1], weights=[r, 1-r], k=N[t])
         # sum = new population size
         N.append(int(np.sum(num)))
     return np.array(N)
@@ -59,38 +60,46 @@ def Task_2(T, S):  # gene expression
     # initial parameters
     Mo = 20  # M(0)
     Po = 20  # P(0)
+    l_m = 1
+    d_m = 0.2
+    l_p = 1
+    d_p = 0.02
+
     x = np.arange(0, T+1)  # time axis
 
     # logistic model
-    y_log = P_log(T, Po, Mo)
+    y_log = P_log(T, Po, Mo, l_m, d_m, l_p, d_p)
 
     # algorithm realizations
-    Y_alg = np.zeros((S, T+1))
+    Y_alg = []
+    for s in range(S):
+        random.seed(s)
+        Y_alg.append(P_alg(T, d_m, d_p, Mo, Po))
+    Y_alg = np.array(Y_alg)
 
     # plotting
     plot_models(T, S, Po, x, y_log, Y_alg,
                 title='gene expression for a single cell',
-                ylabel='number of protein particles $P$')
+                ylabel='number of protein particles $P$',
+                ax2_ticks=[0, Po], ax2_ticklabels=['0', '$P_0$'])
+
     plt.show()
 
 
-def M_log(T, Mo):  # logistic model
+def M_log(T, Mo, l_m, d_m):  # logistic model
     M = [Mo]
-    lambda_m = 1
-    d_m = 0.2
     for t in range(T):
-        M.append(M[-1] + lambda_m - d_m*M[-1])  # mean field eq
+        M.append(M[t] + l_m - d_m*M[t])  # mean field eq
     return np.array(M)
 
 
-def P_log(T, Po, Mo):  # logistic model
+def P_log(T, Po, Mo, l_m, d_m, l_p, d_p):  # logistic model
     P = [Po]
-    lambda_p = 1
-    d_p = 0.02
     for t in range(T):
-        M = M_log(T, Mo)
-        P.append(P[-1] + lambda_p*M[t] - d_p*P[-1])  # mean field eq
+        M = M_log(T, Mo, l_m, d_m)
+        P.append(P[t] + l_p*M[t] - d_p*P[t])  # mean field eq
     return np.array(P)
+
 
 def P_alg(T, d_m, d_p, Mo, Po):  # algorithm realizations
     M = [Mo]
@@ -113,8 +122,11 @@ def Task_4(T, S):  # SIR model
     pass
 
 
-def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel):  # general plotting
+def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel,
+                ax2_ticks, ax2_ticklabels):
     """
+    General plotting function.
+
     Parameters
     ----------
     T : int
@@ -143,7 +155,8 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel):  # general plotting
     # algorithm mean+std
     Y_alg_mean = np.mean(Y_alg, axis=0)
     Y_alg_std = np.std(Y_alg, axis=0)
-    l3 = plt.errorbar(x, Y_alg_mean, fmt='o', c='k', ms=5, yerr=Y_alg_std,
+    l3 = plt.errorbar(x, Y_alg_mean, fmt='o', c='k', ms=5, yerr=[],
+                      # Y_alg_std,
                       label=r'$\left< N(t) \right>$ mean+std of '
                             + str(S)+' Markov realizations')
     # layout
@@ -153,17 +166,12 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel):  # general plotting
     plt.legend(handles=[l1, l2, l3])
     ax2 = ax.twinx()  # secondary axis for additional labels
     ax2.set_ylim(ax.get_ylim())  # same ylim
-    ax2.set_yticks([0, No])
-    ax2.set_yticklabels(['0', '$N_0$'])
+    ax2.set_yticks(ax2_ticks)
+    ax2.set_yticklabels(ax2_ticklabels)
 
 
 if __name__ == '__main__':
-<<<<<<< Updated upstream
     # Task_1(T=60, S=10)
     Task_2(T=300, S=10)
-=======
-    Task_1(T=50, S=10)
-    Task_2(T=10, S=10)
->>>>>>> Stashed changes
     Task_3(T=10, S=10)
     Task_4(T=10, S=10)
