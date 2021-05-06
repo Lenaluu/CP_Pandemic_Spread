@@ -92,6 +92,18 @@ def P_log(T, Po, Mo):  # logistic model
         P.append(P[-1] + lambda_p*M[t] - d_p*P[-1])  # mean field eq
     return np.array(P)
 
+def P_alg(T, d_m, d_p, Mo, Po):  # algorithm realizations
+    M = [Mo]
+    P = [Po]
+    for t in range(T):
+        # num = k-sized list of population elements chosen with replacement
+        M_down = random.choices([0, 1], weights=[d_m, 1-d_m], k=M[t])
+        P_down = random.choices([0, 1], weights=[d_p, 1-d_p], k=P[t])
+        # sum = new population siz
+        M.append(int(np.sum(M_down)+1))
+        P.append(int(np.sum(P_down)+M[t]))
+    return np.array(P)
+
 
 def Task_3(T, S):  # Verhulst extinction
     pass
@@ -146,7 +158,12 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel):  # general plotting
 
 
 if __name__ == '__main__':
+<<<<<<< Updated upstream
     # Task_1(T=60, S=10)
     Task_2(T=300, S=10)
+=======
+    Task_1(T=50, S=10)
+    Task_2(T=10, S=10)
+>>>>>>> Stashed changes
     Task_3(T=10, S=10)
     Task_4(T=10, S=10)
