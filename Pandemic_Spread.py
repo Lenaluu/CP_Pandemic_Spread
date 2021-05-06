@@ -16,8 +16,9 @@ def Task_1(T, S):  # death process
     # initial parameters
     No = 20  # time span
     r = 0.1  # decay rate
+    x = np.arange(0, T+1)  # time axis
 
-    # logarithmic model
+    # logistic model
     y_log = N_log(T, r, No)
 
     # algorithm realizations
@@ -28,12 +29,15 @@ def Task_1(T, S):  # death process
     Y_alg = np.array(Y_alg)
 
     # plotting
-    plot_models(T, S, No, y_log, Y_alg,
+    plot_models(T, S, No, x, y_log, Y_alg,
                 title='death process with rate $r={}$'.format(r),
                 ylabel='number of particles $N$')
 
+    plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
+    plt.show()
 
-def N_log(T, r, No):  # logarithmic model
+
+def N_log(T, r, No):  # logistic model
     N = [No]
     for t in range(T):
         N.append(N[-1] - r*N[-1])  # mean field eq: N(t+1) = N(t) + dN(t)/dt
@@ -51,7 +55,42 @@ def N_alg(T, r, No):  # algorithm realizations
 
 
 def Task_2(T, S):  # gene expression
-    pass
+
+    # initial parameters
+    Mo = 20  # M(0)
+    Po = 20  # P(0)
+    x = np.arange(0, T+1)  # time axis
+
+    # logistic model
+    y_log = P_log(T, Po, Mo)
+
+    # algorithm realizations
+    Y_alg = np.zeros((S, T+1))
+
+    # plotting
+    plot_models(T, S, Po, x, y_log, Y_alg,
+                title='gene expression for a single cell',
+                ylabel='number of protein particles $P$')
+    plt.show()
+
+
+def M_log(T, Mo):  # logistic model
+    M = [Mo]
+    lambda_m = 1
+    d_m = 0.2
+    for t in range(T):
+        M.append(M[-1] + lambda_m - d_m*M[-1])  # mean field eq
+    return np.array(M)
+
+
+def P_log(T, Po, Mo):  # logistic model
+    P = [Po]
+    lambda_p = 1
+    d_p = 0.02
+    for t in range(T):
+        M = M_log(T, Mo)
+        P.append(P[-1] + lambda_p*M[t] - d_p*P[-1])  # mean field eq
+    return np.array(P)
 
 
 def Task_3(T, S):  # Verhulst extinction
@@ -62,7 +101,7 @@ def Task_4(T, S):  # SIR model
     pass
 
 
-def plot_models(T, S, No, y_log, Y_alg, title, ylabel):  # general plotting
+def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel):  # general plotting
     """
     Parameters
     ----------
@@ -73,7 +112,7 @@ def plot_models(T, S, No, y_log, Y_alg, title, ylabel):  # general plotting
     No : int
         Initial number of particles N_0.
     y_log : 1D array
-        Logarithmic model from mean-field equations.
+        logistic model from mean-field equations.
     Y_alg : 2D array
         Gillespie algorithm realizations from Marcov process.
     title : str
@@ -81,11 +120,10 @@ def plot_models(T, S, No, y_log, Y_alg, title, ylabel):  # general plotting
     """
 
     fig, ax = plt.subplots(figsize=(8.4, 4.8))
-    x = np.arange(0, T+1)
 
-    # logarithmic model
+    # logistic model
     l1, = plt.plot(x, y_log, lw=2, c='k',
-                   label='mean-field equations (logarithmic model)')
+                   label='mean-field equations (logistic model)')
     # algorithm realizations
     for s in range(S):
         l2, = plt.plot(x, Y_alg[s], 'o-', ms=2, zorder=-1,
@@ -101,16 +139,14 @@ def plot_models(T, S, No, y_log, Y_alg, title, ylabel):  # general plotting
     plt.ylabel(ylabel)
     plt.title(title)
     plt.legend(handles=[l1, l2, l3])
-    plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
     ax2 = ax.twinx()  # secondary axis for additional labels
     ax2.set_ylim(ax.get_ylim())  # same ylim
     ax2.set_yticks([0, No])
     ax2.set_yticklabels(['0', '$N_0$'])
-    plt.show()
 
 
 if __name__ == '__main__':
-    Task_1(T=70, S=70)
-    Task_2(T=10, S=10)
+    # Task_1(T=60, S=10)
+    Task_2(T=300, S=10)
     Task_3(T=10, S=10)
     Task_4(T=10, S=10)
