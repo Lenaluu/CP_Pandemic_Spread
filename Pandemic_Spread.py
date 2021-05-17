@@ -97,7 +97,10 @@ def Task_2(T, S):  # gene expression
              label='P')
     plt.plot(P, w_P_f)
     plt.show()
-
+    
+    skew = np.sum(((w_P-np.mean(w_P))/np.std(w_P))**3)/w_P.size
+    kurt = np.sum(((w_P-np.mean(w_P))/np.std(w_P))**4)/w_P.size
+    print('skewness = '+str(skew)+'; kurtosis = '+str(kurt))
 
 def M_log(T, Mo, l_m, d_m):  # logistic model
     M = [Mo]
@@ -192,6 +195,10 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel,
 
 if __name__ == '__main__':
     # Task_1(T=60, S=10)
-    Task_2(T=600, S=600)
+
+    Task_2(T=600, S=1200)
+    #Task_2(T=50, S=500)
+    #Task_1(T=50, S=10)
+    #Task_2(T=10, S=10)
     Task_3(T=10, S=10)
     Task_4(T=10, S=10)
