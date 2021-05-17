@@ -151,8 +151,69 @@ def P_alg(T, d_m, d_p, Mo, Po):  # algorithm realizations
     return np.array(P)
 
 
-def Task_3(T, S):  # Verhulst extinction
-    pass
+def Task_3(T, S, No=15):  # Verhulst extinction
+
+    # initial parameters
+    x = np.arange(0, T+1)  # time axis
+    l = 1
+    d = 0.1
+
+    # logistic model
+    y_log, t_ex_log = N3_log(T, No, l, d)
+    y_fill = np.zeros(T-t_ex_log)
+    y_log = np.append(y_log, y_fill)
+
+    # algorithm realizations
+    Y_alg, t_ext = [], []
+    for s in range(S):
+        random.seed(s)
+        N_alg, t_ex = N3_alg(T, No, l, d)
+        N_fill = np.zeros(T-t_ex)
+        N_alg = np.append(N_alg, N_fill)
+        Y_alg.append(N_alg)
+        t_ext.append(t_ex)
+    Y_alg = np.array(Y_alg)
+    t_ext = np.array(t_ext)
+    t_mean = t_ext.mean()
+    print(t_mean)
+
+    # plotting
+    plot_models(T, S, No, x, y_log, Y_alg,
+                title='death process with rates $l={}$, $d={}$'.format(l, d),
+                ylabel='number of particles $N$',
+                ax2_ticks=[0, No], ax2_ticklabels=['0', '$N_0$'])
+
+    plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
+    plt.show()
+
+
+def N3_log(T, No, l, d):  # logistic model
+    N = [No]
+    t_ex = T
+    for t in range(T):
+        # mean field eq: N(t+1) = N(t) + dN(t)/dt
+        N_new = N[t] + l*N[t] - d*N[t]**2
+        if N_new <= 0:
+            t_ex = t
+            break
+        N.append(N_new)
+    return np.array(N), t_ex
+
+
+def N3_alg(T, No, l, d):  # algorithm realizations
+    N = [No]
+    t_ex = T
+    for t in range(T):
+        # num = k-sized list of population elements chosen with replacement
+        up = random.choices([2, 1], weights=[l, 1-l], k=N[t])
+        down = random.choices([1, 0], weights=[d, 1-d], k=N[t]**2)
+        # sum = new population size
+        N_new = int(np.sum(up)-np.sum(down))
+        if N_new <= 0:
+            t_ex = t
+            break
+        N.append(N_new)
+    return np.array(N), t_ex
 
 
 def Task_4(T, S):  # SIR model
@@ -193,7 +254,7 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel,
     Y_alg_mean = np.mean(Y_alg, axis=0)
     Y_alg_std = np.std(Y_alg, axis=0)
     l3 = plt.errorbar(x, Y_alg_mean, fmt='o', c='k', ms=5,  # yerr=[],
-                      yerr=Y_alg_std, ecolor='gray', errorevery=3,  # zorder=-2,
+                      yerr=Y_alg_std, ecolor='gray', errorevery=3,
                       label=r'$\left< N(t) \right>$ mean+std of '
                             + str(S)+' Markov realizations')
     # layout
@@ -209,6 +270,7 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel,
 
 if __name__ == '__main__':
     # Task_1(T=60, S=10)
-    Task_2(T=600, S=300)
-    Task_3(T=10, S=10)
+    # Task_2(T=600, S=300)
+    for No in range(10, 20):
+        Task_3(T=900, S=50, No=No)
     Task_4(T=10, S=10)
