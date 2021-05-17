@@ -86,17 +86,20 @@ def Task_2(T, S):  # gene expression
 
     plt.show()
 
-    w_P = np.array([Y_alg[s][T-1] for s in range(S)])
+    w_P = np.array([Y_alg[s][int((T-1)*0.8):] for s in range(S)]).flatten()
     P = np.array(range(w_P.min(), w_P.max()))
     Pm = l_m*l_p/(d_m*d_p)
     sigma2 = Pm*(1+l_p/(d_m+d_p))
     w_P_f = 1/(np.sqrt(2*np.pi*sigma2)) * np.exp(-(P-Pm)**2/(2*sigma2))
 
     plt.figure()
-    plt.hist(w_P, bins=int(len(P)/3), density=True, histtype='step')
+    plt.hist(w_P, bins=int(len(P)/5), density=True, histtype='step')
     plt.plot(P, w_P_f)
     plt.show()
-
+    
+    skew = np.sum(((w_P-np.mean(w_P))/np.std(w_P))**3)/w_P.size
+    kurt = np.sum(((w_P-np.mean(w_P))/np.std(w_P))**4)/w_P.size
+    print('skewness = '+str(skew)+'; kurtosis = '+str(kurt))
 
 def M_log(T, Mo, l_m, d_m):  # logistic model
     M = [Mo]
@@ -184,6 +187,10 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel,
 
 if __name__ == '__main__':
     # Task_1(T=60, S=10)
-    Task_2(T=600, S=600)
+
+    Task_2(T=600, S=1200)
+    #Task_2(T=50, S=500)
+    #Task_1(T=50, S=10)
+    #Task_2(T=10, S=10)
     Task_3(T=10, S=10)
     Task_4(T=10, S=10)
