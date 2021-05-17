@@ -81,8 +81,20 @@ def Task_2(T, S):  # gene expression
     plot_models(T, S, Po, x, y_log, Y_alg,
                 title='gene expression for a single cell',
                 ylabel='number of protein particles $P$',
-                ax2_ticks=[0, Po], ax2_ticklabels=['0', '$P_0$'])
+                ax2_ticks=[0, Po, y_log[-1]],
+                ax2_ticklabels=['0', '$P_0$', '$P_e$'])
 
+    plt.show()
+
+    w_P = np.array([Y_alg[s][T-1] for s in range(S)])
+    P = np.array(range(w_P.min(), w_P.max()))
+    Pm = l_m*l_p/(d_m*d_p)
+    sigma2 = Pm*(1+l_p/(d_m+d_p))
+    w_P_f = 1/(np.sqrt(2*np.pi*sigma2)) * np.exp(-(P-Pm)**2/(2*sigma2))
+
+    plt.figure()
+    plt.hist(w_P, bins=int(len(P)/3), density=True, histtype='step')
+    plt.plot(P, w_P_f)
     plt.show()
 
 
@@ -155,8 +167,8 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel,
     # algorithm mean+std
     Y_alg_mean = np.mean(Y_alg, axis=0)
     Y_alg_std = np.std(Y_alg, axis=0)
-    l3 = plt.errorbar(x, Y_alg_mean, fmt='o', c='k', ms=5, yerr=[],
-                      # Y_alg_std,
+    l3 = plt.errorbar(x, Y_alg_mean, fmt='o', c='k', ms=5,  # yerr=[],
+                      yerr=Y_alg_std, ecolor='gray', errorevery=3,  # zorder=-2,
                       label=r'$\left< N(t) \right>$ mean+std of '
                             + str(S)+' Markov realizations')
     # layout
@@ -172,6 +184,6 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel,
 
 if __name__ == '__main__':
     # Task_1(T=60, S=10)
-    Task_2(T=300, S=10)
+    Task_2(T=600, S=600)
     Task_3(T=10, S=10)
     Task_4(T=10, S=10)
