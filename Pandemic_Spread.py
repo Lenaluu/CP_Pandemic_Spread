@@ -152,20 +152,21 @@ def P_alg(T, d_m, d_p, Mo, Po):  # algorithm realizations
 
 
 def Task_3(T, S):  # Verhulst extinction
-    
+
     # initial parameters
     x = np.arange(0, T+1)  # time axis
     l = 1
     d = 0.1
     t_mean_ex = []
     t_std_ex = []
-    No_range = range(10, 20)
+    t_extinction = []
+    No_range = range(10, 20+1)
     for No in No_range:
         # logistic model
         y_log, t_ex_log = N3_log(T, No, l, d)
         y_fill = np.zeros(T-t_ex_log)
         y_log = np.append(y_log, y_fill)
-    
+
         # algorithm realizations
         Y_alg, t_ext = [], []
         for s in range(S):
@@ -177,31 +178,36 @@ def Task_3(T, S):  # Verhulst extinction
             t_ext.append(t_ex)
         Y_alg = np.array(Y_alg)
         t_ext = np.array(t_ext)
-        t_mean_ex.append(t_ext.mean())
-        t_std_ex.append(t_ext.std())
-         
+
+        t_extinction.append(t_ext)
+        # t_mean_ex.append(t_ext.mean())
+        # t_std_ex.append(t_ext.std())
 
         # plotting
         # plot_models(T, S, No, x, y_log, Y_alg,
         #             title='death process with rates $l={}$, $d={}$'.format(l, d),
         #             ylabel='number of particles $N$',
         #             ax2_ticks=[0, No], ax2_ticklabels=['0', '$N_0$'])
-    
+
         # plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
-    
-    
+
+    t_extinction = np.array(t_extinction)
+    t_mean_ex = np.mean(t_extinction, axis=1)
+    t_std_ex = np.std(t_extinction, axis=1)
+
     fig, ax = plt.subplots(figsize=(8.4, 4.8))
+    ax.plot(No_range, t_extinction, alpha=.5, zorder=-1)
     ax.errorbar(No_range, t_mean_ex, yerr=t_std_ex,
-                fmt='o-', c='k', ms=5, 
-                ecolor='gray', errorevery=1)
-    #ich empfehle einmal yerr auszukommentieren für sichtbares ergebnis
+                fmt='o-', c='k', ms=5, zorder=1)
+    # ich empfehle einmal yerr auszukommentieren für sichtbares ergebnis
+    coef = np.polyfit(No_range, t_mean_ex, 1, w=1/t_std_ex)
+    fit = np.poly1d(coef)
+    plt.plot(No_range, fit(No_range), '--k')
     plt.xlabel('$N_0$')
-    plt.ylabel('mean extinction time $T_{ext.}$')
+    plt.ylabel('mean extinction time $T_{ext}$')
     plt.title('Verhulst process mean extinction time')
 
     plt.show()
-    
-
 
 
 def N3_log(T, No, l, d):  # logistic model
@@ -289,5 +295,5 @@ if __name__ == '__main__':
     # Task_1(T=60, S=10)
     # Task_2(T=600, S=300)
 
-    Task_3(T=900, S=50)
+    Task_3(T=900, S=900)
     Task_4(T=10, S=10)
