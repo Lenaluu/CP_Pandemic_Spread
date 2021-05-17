@@ -151,40 +151,57 @@ def P_alg(T, d_m, d_p, Mo, Po):  # algorithm realizations
     return np.array(P)
 
 
-def Task_3(T, S, No=15):  # Verhulst extinction
-
+def Task_3(T, S):  # Verhulst extinction
+    
     # initial parameters
     x = np.arange(0, T+1)  # time axis
     l = 1
     d = 0.1
+    t_mean_ex = []
+    t_std_ex = []
+    No_range = range(10, 20)
+    for No in No_range:
+        # logistic model
+        y_log, t_ex_log = N3_log(T, No, l, d)
+        y_fill = np.zeros(T-t_ex_log)
+        y_log = np.append(y_log, y_fill)
+    
+        # algorithm realizations
+        Y_alg, t_ext = [], []
+        for s in range(S):
+            random.seed(s)
+            N_alg, t_ex = N3_alg(T, No, l, d)
+            N_fill = np.zeros(T-t_ex)
+            N_alg = np.append(N_alg, N_fill)
+            Y_alg.append(N_alg)
+            t_ext.append(t_ex)
+        Y_alg = np.array(Y_alg)
+        t_ext = np.array(t_ext)
+        t_mean_ex.append(t_ext.mean())
+        t_std_ex.append(t_ext.std())
+         
 
-    # logistic model
-    y_log, t_ex_log = N3_log(T, No, l, d)
-    y_fill = np.zeros(T-t_ex_log)
-    y_log = np.append(y_log, y_fill)
+        # plotting
+        # plot_models(T, S, No, x, y_log, Y_alg,
+        #             title='death process with rates $l={}$, $d={}$'.format(l, d),
+        #             ylabel='number of particles $N$',
+        #             ax2_ticks=[0, No], ax2_ticklabels=['0', '$N_0$'])
+    
+        # plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
+    
+    
+    fig, ax = plt.subplots(figsize=(8.4, 4.8))
+    ax.errorbar(No_range, t_mean_ex, yerr=t_std_ex,
+                fmt='o-', c='k', ms=5, 
+                ecolor='gray', errorevery=1)
+    #ich empfehle einmal yerr auszukommentieren für sichtbares ergebnis
+    plt.xlabel('$N_0$')
+    plt.ylabel('mean extinction time $T_{ext.}$')
+    plt.title('Verhulst process mean extinction time')
 
-    # algorithm realizations
-    Y_alg, t_ext = [], []
-    for s in range(S):
-        random.seed(s)
-        N_alg, t_ex = N3_alg(T, No, l, d)
-        N_fill = np.zeros(T-t_ex)
-        N_alg = np.append(N_alg, N_fill)
-        Y_alg.append(N_alg)
-        t_ext.append(t_ex)
-    Y_alg = np.array(Y_alg)
-    t_ext = np.array(t_ext)
-    t_mean = t_ext.mean()
-    print(t_mean)
-
-    # plotting
-    plot_models(T, S, No, x, y_log, Y_alg,
-                title='death process with rates $l={}$, $d={}$'.format(l, d),
-                ylabel='number of particles $N$',
-                ax2_ticks=[0, No], ax2_ticklabels=['0', '$N_0$'])
-
-    plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
     plt.show()
+    
+
 
 
 def N3_log(T, No, l, d):  # logistic model
@@ -271,6 +288,6 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel,
 if __name__ == '__main__':
     # Task_1(T=60, S=10)
     # Task_2(T=600, S=300)
-    for No in range(10, 20):
-        Task_3(T=900, S=50, No=No)
+
+    Task_3(T=900, S=50)
     Task_4(T=10, S=10)
