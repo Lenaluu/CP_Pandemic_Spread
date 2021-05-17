@@ -68,7 +68,7 @@ def Task_2(T, S):  # gene expression
     x = np.arange(0, T+1)  # time axis
 
     # logistic model
-    y_log = P_log(T, Po, Mo, l_m, d_m, l_p, d_p)
+    y_log, t_break = P_log(T, Po, Mo, l_m, d_m, l_p, d_p)
 
     # algorithm realizations
     Y_alg = []
@@ -86,14 +86,15 @@ def Task_2(T, S):  # gene expression
 
     plt.show()
 
-    w_P = np.array([Y_alg[s][T-1] for s in range(S)])
+    w_P = np.array([Y_alg[s][t_break:] for s in range(S)]).flatten()
     P = np.array(range(w_P.min(), w_P.max()))
     Pm = l_m*l_p/(d_m*d_p)
     sigma2 = Pm*(1+l_p/(d_m+d_p))
     w_P_f = 1/(np.sqrt(2*np.pi*sigma2)) * np.exp(-(P-Pm)**2/(2*sigma2))
 
     plt.figure()
-    plt.hist(w_P, bins=int(len(P)/3), density=True, histtype='step')
+    plt.hist(w_P, bins=int(len(P)/5), density=True, histtype='step',
+             label='P')
     plt.plot(P, w_P_f)
     plt.show()
 
@@ -107,10 +108,17 @@ def M_log(T, Mo, l_m, d_m):  # logistic model
 
 def P_log(T, Po, Mo, l_m, d_m, l_p, d_p):  # logistic model
     P = [Po]
+    i = 0
+    t_break = int(.9*T)
     for t in range(T):
         M = M_log(T, Mo, l_m, d_m)
-        P.append(P[t] + l_p*M[t] - d_p*P[t])  # mean field eq
-    return np.array(P)
+        dP = l_p*M[t] - d_p*P[t]
+        P.append(P[t] + dP)  # mean field eq
+        if dP < 1e-3 and i == 0:
+            print(t)
+            t_break = t
+            i = 1
+    return np.array(P), t_break
 
 
 def P_alg(T, d_m, d_p, Mo, Po):  # algorithm realizations
