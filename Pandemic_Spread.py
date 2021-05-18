@@ -9,6 +9,7 @@ https://docs.python.org/3/library/random.html
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+from scipy.optimize import curve_fit
 
 
 def Task_1(T, S):  # death process
@@ -160,7 +161,7 @@ def Task_3(T, S):  # Verhulst extinction
     t_mean_ex = []
     t_std_ex = []
     t_extinction = []
-    No_range = range(10, 20+1)
+    No_range = range(1, 30+1)
     for No in No_range:
         # logistic model
         y_log, t_ex_log = N3_log(T, No, l, d)
@@ -180,34 +181,49 @@ def Task_3(T, S):  # Verhulst extinction
         t_ext = np.array(t_ext)
 
         t_extinction.append(t_ext)
-        # t_mean_ex.append(t_ext.mean())
-        # t_std_ex.append(t_ext.std())
+        t_mean_ex.append(t_ext.mean())
+        t_std_ex.append(t_ext.std())
 
         # plotting
         # plot_models(T, S, No, x, y_log, Y_alg,
-        #             title='death process with rates $l={}$, $d={}$'.format(l, d),
+        #             title='death process with rates $l={}$, $d={}$'.format(
+        #                 l, d),
         #             ylabel='number of particles $N$',
         #             ax2_ticks=[0, No], ax2_ticklabels=['0', '$N_0$'])
 
         # plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
+
+    plt.show()
 
     t_extinction = np.array(t_extinction)
     t_mean_ex = np.mean(t_extinction, axis=1)
     t_std_ex = np.std(t_extinction, axis=1)
 
     fig, ax = plt.subplots(figsize=(8.4, 4.8))
-    ax.plot(No_range, t_extinction, alpha=.5, zorder=-1)
-    ax.errorbar(No_range, t_mean_ex, yerr=t_std_ex,
-                fmt='o-', c='k', ms=5, zorder=1)
-    # ich empfehle einmal yerr auszukommentieren für sichtbares ergebnis
-    coef = np.polyfit(No_range, t_mean_ex, 1, w=1/t_std_ex)
-    fit = np.poly1d(coef)
-    plt.plot(No_range, fit(No_range), '--k')
+    ax.plot(No_range, t_extinction, alpha=.5,
+            zorder=-1)
+    l1, = plt.plot([], [], label='Markov samples', c='tab:blue')  # for legend
+    l2 = plt.errorbar(No_range, t_mean_ex, yerr=t_std_ex,
+                      fmt='o', c='k', ms=5, zorder=1, label='sample mean')
+
+    popt, pcov = curve_fit(log, No_range, t_mean_ex, p0=[1, 19, 130])
+    print('k, x0, N = \n', *popt)
+    l3, = plt.plot(No_range, log(No_range, *popt), '--k', label='logistic fit')
+
     plt.xlabel('$N_0$')
     plt.ylabel('mean extinction time $T_{ext}$')
     plt.title('Verhulst process mean extinction time')
+    plt.legend(handles=[l1, l2, l3])
+
+    ax2 = ax.twinx()  # secondary axis for additional labels
+    ax2.set_ylim(ax.get_ylim())  # same ylim
+    ax2.set_yticks([0, popt[2]])
 
     plt.show()
+
+
+def log(x, k, x0, N):
+    return N/(1+np.exp(k*(x-x0)))
 
 
 def N3_log(T, No, l, d):  # logistic model
