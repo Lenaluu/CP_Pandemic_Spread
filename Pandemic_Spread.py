@@ -15,39 +15,39 @@ from scipy.optimize import curve_fit
 def Task_1(T, S):  # death process
 
     # initial parameters
-    No = 20  # time span
+    N0 = 20  # time span
     r = 0.1  # decay rate
     x = np.arange(0, T+1)  # time axis
 
     # logistic model
-    y_log = N_log(T, r, No)
+    y_log = N_log(T, r, N0)
 
     # algorithm realizations
     Y_alg = []
     for s in range(S):
         random.seed(s)
-        Y_alg.append(N_alg(T, r, No))
+        Y_alg.append(N_alg(T, r, N0))
     Y_alg = np.array(Y_alg)
 
     # plotting
-    plot_models(T, S, No, x, y_log, Y_alg,
+    plot_models(T, S, N0, x, y_log, Y_alg,
                 title='death process with rate $r={}$'.format(r),
                 ylabel='number of particles $N$',
-                ax2_ticks=[0, No], ax2_ticklabels=['0', '$N_0$'])
+                ax2_ticks=[0, N0], ax2_ticklabels=['0', '$N_0$'])
 
-    plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
+    plt.yticks(np.arange(0, N0+2, step=np.round(N0/10)))  # only integers
     plt.show()
 
 
-def N_log(T, r, No):  # logistic model
-    N = [No]
+def N_log(T, r, N0):  # logistic model
+    N = [N0]
     for t in range(T):
         N.append(N[t] - r*N[t])  # mean field eq: N(t+1) = N(t) + dN(t)/dt
     return np.array(N)
 
 
-def N_alg(T, r, No):  # algorithm realizations
-    N = [No]
+def N_alg(T, r, N0):  # algorithm realizations
+    N = [N0]
     for t in range(T):
         # num = k-sized list of population elements chosen with replacement
         num = random.choices([0, 1], weights=[r, 1-r], k=N[t])
@@ -158,13 +158,14 @@ def Task_3(T, S):  # Verhulst extinction
     x = np.arange(0, T+1)  # time axis
     l = 1
     d = 0.1
-    t_mean_ex = []
-    t_std_ex = []
+    t_ex_mean = []
+    t_ex_std = []
     t_extinction = []
-    No_range = range(1, 30+1)
-    for No in No_range:
+    N0_range = range(10, 22+1)
+    print('N_0 range:', N0_range[0], N0_range[-1])
+    for N0 in N0_range:
         # logistic model
-        y_log, t_ex_log = N3_log(T, No, l, d)
+        y_log, t_ex_log = N3_log(T, N0, l, d)
         y_fill = np.zeros(T-t_ex_log)
         y_log = np.append(y_log, y_fill)
 
@@ -172,7 +173,7 @@ def Task_3(T, S):  # Verhulst extinction
         Y_alg, t_ext = [], []
         for s in range(S):
             random.seed(s)
-            N_alg, t_ex = N3_alg(T, No, l, d)
+            N_alg, t_ex = N3_alg(T, N0, l, d)
             N_fill = np.zeros(T-t_ex)
             N_alg = np.append(N_alg, N_fill)
             Y_alg.append(N_alg)
@@ -181,34 +182,40 @@ def Task_3(T, S):  # Verhulst extinction
         t_ext = np.array(t_ext)
 
         t_extinction.append(t_ext)
-        t_mean_ex.append(t_ext.mean())
-        t_std_ex.append(t_ext.std())
+        t_ex_mean.append(t_ext.mean())
+        t_ex_std.append(t_ext.std())
 
         # plotting
-        # plot_models(T, S, No, x, y_log, Y_alg,
-        #             title='death process with rates $l={}$, $d={}$'.format(
+        # plot_models(T, S, N0, x, y_log, Y_alg,
+        #             title='Verhulst extinction process with rates $l={}$, $d={}$'.format(
         #                 l, d),
         #             ylabel='number of particles $N$',
-        #             ax2_ticks=[0, No], ax2_ticklabels=['0', '$N_0$'])
+        #             ax2_ticks=[0, N0], ax2_ticklabels=['0', '$N_0$'])
 
-        # plt.yticks(np.arange(0, No+2, step=np.round(No/10)))  # only integers
+        # plt.yticks(np.arange(0, N0+2, step=np.round(N0/10)))  # only integers
 
     plt.show()
 
     t_extinction = np.array(t_extinction)
-    t_mean_ex = np.mean(t_extinction, axis=1)
-    t_std_ex = np.std(t_extinction, axis=1)
+    t_ex_mean = np.mean(t_extinction, axis=1)
+    t_ex_std = np.std(t_extinction, axis=1)
 
     fig, ax = plt.subplots(figsize=(8.4, 4.8))
-    ax.plot(No_range, t_extinction, alpha=.5,
+    ax.plot(N0_range, t_extinction, alpha=.5,
             zorder=-1)
-    l1, = plt.plot([], [], label='Markov samples', c='tab:blue')  # for legend
-    l2 = plt.errorbar(No_range, t_mean_ex, yerr=t_std_ex,
+    l1, = plt.plot([], [], label=str(S)+' Markov samples',
+                   c='tab:blue')  # for legend
+    l2 = plt.errorbar(N0_range, t_ex_mean, yerr=t_ex_std,
                       fmt='o', c='k', ms=5, zorder=1, label='sample mean')
 
-    popt, pcov = curve_fit(log, No_range, t_mean_ex, p0=[1, 19, 130])
-    print('k, x0, N = \n', *popt)
-    l3, = plt.plot(No_range, log(No_range, *popt), '--k', label='logistic fit')
+    # logistic fit
+    t_ex_std[t_ex_std == 0] = 1  # replace zeros as we need 1/std for fitting
+    popt, pcov = curve_fit(log, N0_range, t_ex_mean, p0=[.5, 19, 130],
+                           sigma=t_ex_std, absolute_sigma=True)
+    print('k, x0, N =', *popt)
+    l3, = plt.plot(N0_range, log(N0_range, *popt), '--k', label='logistic fit')
+    # l4, = plt.plot(N0_range, log(N0_range, 0.56, 19.5, 131.7),
+    #                '--b', label='Lena\'s fit')
 
     plt.xlabel('$N_0$')
     plt.ylabel('mean extinction time $T_{ext}$')
@@ -223,11 +230,12 @@ def Task_3(T, S):  # Verhulst extinction
 
 
 def log(x, k, x0, N):
+    x = np.array(x)
     return N/(1+np.exp(k*(x-x0)))
 
 
-def N3_log(T, No, l, d):  # logistic model
-    N = [No]
+def N3_log(T, N0, l, d):  # logistic model
+    N = [N0]
     t_ex = T
     for t in range(T):
         # mean field eq: N(t+1) = N(t) + dN(t)/dt
@@ -239,8 +247,8 @@ def N3_log(T, No, l, d):  # logistic model
     return np.array(N), t_ex
 
 
-def N3_alg(T, No, l, d):  # algorithm realizations
-    N = [No]
+def N3_alg(T, N0, l, d):  # algorithm realizations
+    N = [N0]
     t_ex = T
     for t in range(T):
         # num = k-sized list of population elements chosen with replacement
@@ -252,6 +260,8 @@ def N3_alg(T, No, l, d):  # algorithm realizations
             t_ex = t
             break
         N.append(N_new)
+        # if t_ex == T:
+        #     print('no extinction for N_0 =', N0)
     return np.array(N), t_ex
 
 
@@ -259,7 +269,7 @@ def Task_4(T, S):  # SIR model
     pass
 
 
-def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel,
+def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
                 ax2_ticks, ax2_ticklabels):
     """
     General plotting function.
@@ -270,7 +280,7 @@ def plot_models(T, S, No, x, y_log, Y_alg, title, ylabel,
         Time span.
     S : int
         Number of sample realizations.
-    No : int
+    N0 : int
         Initial number of particles N_0.
     y_log : 1D array
         logistic model from mean-field equations.
@@ -311,5 +321,5 @@ if __name__ == '__main__':
     # Task_1(T=60, S=10)
     # Task_2(T=600, S=300)
 
-    Task_3(T=900, S=900)
+    Task_3(T=1000, S=1000)
     Task_4(T=10, S=10)
