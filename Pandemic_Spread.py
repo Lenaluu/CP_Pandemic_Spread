@@ -266,7 +266,48 @@ def N3_alg(T, N0, l, d):  # algorithm realizations
 
 
 def Task_4(T, S):  # SIR model
-    pass
+
+    # initial parameters
+    b = 0.02  # infection
+    c = 0.3   # recovery
+    S0 = 30
+    I0 = 1
+    R0 = 0
+    x = np.arange(0, T+1)  # time axis
+
+    # logistic model
+    Sus_log, Inf_log, Rec_log = SIR_log(T, S0, I0, R0, b, c)
+
+    # algorithm realizations
+    Sus_alg, Inf_alg, Rec_alg = [], [], []
+    for s in range(S):
+        random.seed(s)
+        Sus, Inf, Rec = SIR_alg(T, S0, I0, R0, b, c)
+        Sus_alg.append(Sus)
+        Inf_alg.append(Inf)
+        Rec_alg.append(Rec)
+    Sus_alg = np.array(Sus_alg)
+    Inf_alg = np.array(Inf_alg)
+    Rec_alg = np.array(Rec_alg)
+
+    # plotting
+    plot_models(T, S, I0, x, Inf_log, Inf_alg,
+                title='SIR model: Infections',
+                ylabel='number of infected persons $I$',
+                ax2_ticks=[0, I0, Inf_log[-1]],
+                ax2_ticklabels=['0', '$I_0$', '$I_e$'])
+    plt.show()
+
+
+def SIR_log(T, S0, I0, R0, b, c):  # logistic model
+    Sus = [S0]
+    Inf = [I0]
+    Rec = [R0]
+    for t in range(T):
+        Sus.append(Sus[t] - b*Sus[t]*Inf[t])
+        Inf.append(Inf[t] + b*Sus[t]*Inf[t] - c*Inf[t])
+        Rec.append(Rec[t] + c*Inf[t])
+    return np.array(Sus), np.array(Sus), np.array(Rec)
 
 
 def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
@@ -320,6 +361,5 @@ def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
 if __name__ == '__main__':
     # Task_1(T=60, S=10)
     # Task_2(T=600, S=300)
-
-    Task_3(T=1000, S=1000)
-    Task_4(T=10, S=10)
+    # Task_3(T=1000, S=1000)
+    Task_4(T=40, S=3)
