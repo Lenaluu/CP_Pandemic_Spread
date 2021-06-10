@@ -310,23 +310,30 @@ def SIR_log(T, S0, I0, R0, b, c):  # logistic model
     return np.array(Sus), np.array(Sus), np.array(Rec)
 
 
-
 def SIR_alg(T, S0, I0, R0, b, c):  # algorithm realizations
     S = [S0]
     I = [I0]
     R = [R0]
+    t_ex = T
     for t in range(T):
         # num = k-sized list of population elements chosen with replacement
-        S_down = random.choices([0, 1], weights=[b, 1-b], k=S[t]*I[t])
-        I_up = random.choices([2, 1], weights=[b, 1-b], k=S[t]*I[t])
+        # TODO
+        S_down = random.choices([0, 1], weights=[b*I[t], 1-b*I[t]], k=S[t])
+        I_up = random.choices([2, 1], weights=[b*S[t], 1-b*S[t]], k=I[t])
         I_down = random.choices([1, 0], weights=[c, 1-c], k=I[t])
-        R_up = random.choices([2, 1], weights=[c, 1-c], k=I[t])
+        R_up = random.choices([2, 1], weights=[c*I[t], 1-c*I[t]], k=R[t])
         # sum = new population size
         S.append(int(np.sum(S_down)))
         I.append(int(np.sum(I_up)-int(np.sum(I_down))))
         R.append(int(np.sum(R_up)))
-            
-        
+        if I[t+1] <= 0:
+            t_ex = t
+            break
+    N_fill = np.zeros(T-t_ex)  # TODO
+    S = np.append(S, N_fill)
+    I = np.append(I, N_fill)
+    R = np.append(R, N_fill)
+    print(S, I, R)
     return np.array(S), np.array(I), np.array(R)
 
 
@@ -382,4 +389,4 @@ if __name__ == '__main__':
     # Task_1(T=60, S=10)
     # Task_2(T=600, S=300)
     # Task_3(T=1000, S=1000)
-    Task_4(T=40, S=3)
+    Task_4(T=30, S=3)
