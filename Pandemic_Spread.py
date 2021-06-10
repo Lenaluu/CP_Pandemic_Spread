@@ -310,6 +310,26 @@ def SIR_log(T, S0, I0, R0, b, c):  # logistic model
     return np.array(Sus), np.array(Sus), np.array(Rec)
 
 
+
+def SIR_alg(T, S0, I0, R0, b, c):  # algorithm realizations
+    S = [S0]
+    I = [I0]
+    R = [R0]
+    for t in range(T):
+        # num = k-sized list of population elements chosen with replacement
+        S_down = random.choices([0, 1], weights=[b, 1-b], k=S[t]*I[t])
+        I_up = random.choices([2, 1], weights=[b, 1-b], k=S[t]*I[t])
+        I_down = random.choices([1, 0], weights=[c, 1-c], k=I[t])
+        R_up = random.choices([2, 1], weights=[c, 1-c], k=I[t])
+        # sum = new population size
+        S.append(int(np.sum(S_down)))
+        I.append(int(np.sum(I_up)-int(np.sum(I_down))))
+        R.append(int(np.sum(R_up)))
+            
+        
+    return np.array(S), np.array(I), np.array(R)
+
+
 def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
                 ax2_ticks, ax2_ticklabels):
     """
