@@ -318,14 +318,14 @@ def SIR_alg(T, S0, I0, R0, b, c):  # algorithm realizations
     for t in range(T):
         # num = k-sized list of population elements chosen with replacement
         # TODO
-        S_down = random.choices([0, 1], weights=[b*I[t], 1-b*I[t]], k=S[t])
-        I_up = random.choices([2, 1], weights=[b*S[t], 1-b*S[t]], k=I[t])
+        S_down = random.choices([1, 0], weights=[b*I[t], 1-b*I[t]], k=S[t])
+        #I_up = random.choices([2, 1], weights=[b*S[t], 1-b*S[t]], k=I[t])
         I_down = random.choices([1, 0], weights=[c, 1-c], k=I[t])
-        R_up = random.choices([2, 1], weights=[c*I[t], 1-c*I[t]], k=R[t])
+        #R_up = random.choices([2, 1], weights=[c*I[t], 1-c*I[t]], k=R[t])
         # sum = new population size
-        S.append(int(np.sum(S_down)))
-        I.append(int(np.sum(I_up)-int(np.sum(I_down))))
-        R.append(int(np.sum(R_up)))
+        S.append(int(S[t]-np.sum(S_down)))
+        I.append(int(I[t]+int(np.sum(S_down))-int(np.sum(I_down))))
+        R.append(R[t]+int(np.sum(I_down)))
         if I[t+1] <= 0:
             t_ex = t
             break
