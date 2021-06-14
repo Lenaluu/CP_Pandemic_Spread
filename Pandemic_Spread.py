@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 from scipy.optimize import curve_fit
-
+import scipy.integrate as integrate
 
 def Task_1(T, S):  # death process
 
@@ -289,7 +289,7 @@ def Task_4(T, S):  # SIR model
     Sus_alg = np.array(Sus_alg)
     Inf_alg = np.array(Inf_alg)
     Rec_alg = np.array(Rec_alg)
-
+    
     # plotting
     plot_models(T, S, I0, x, Inf_log, Inf_alg,
                 title='SIR model: Infections',
@@ -329,11 +329,12 @@ def SIR_alg(T, S0, I0, R0, b, c):  # algorithm realizations
         if I[t+1] <= 0:
             t_ex = t
             break
-    N_fill = np.zeros(T-t_ex)  # TODO
+    
+    N_fill = np.zeros(T-t_ex-1)  # TODO
     S = np.append(S, N_fill)
     I = np.append(I, N_fill)
     R = np.append(R, N_fill)
-    print(S, I, R)
+    print(len(S), len(I), len(R))
     return np.array(S), np.array(I), np.array(R)
 
 
@@ -363,10 +364,12 @@ def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
     # logistic model
     l1, = plt.plot(x, y_log, lw=2, c='k',
                    label='mean-field equations (logistic model)')
+    
     # algorithm realizations
     for s in range(S):
         l2, = plt.plot(x, Y_alg[s], 'o-', ms=2, zorder=-1,
                        label='Marcov process (Gillespie algorithm)')
+    
     # algorithm mean+std
     Y_alg_mean = np.mean(Y_alg, axis=0)
     Y_alg_std = np.std(Y_alg, axis=0)
@@ -389,4 +392,4 @@ if __name__ == '__main__':
     # Task_1(T=60, S=10)
     # Task_2(T=600, S=300)
     # Task_3(T=1000, S=1000)
-    Task_4(T=30, S=3)
+    Task_4(T=60, S=500)
