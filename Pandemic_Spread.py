@@ -12,6 +12,7 @@ import random
 from scipy.optimize import curve_fit
 import scipy.integrate as integrate
 
+
 def Task_1(T, S):  # death process
 
     # initial parameters
@@ -289,7 +290,7 @@ def Task_4(T, S):  # SIR model
     Sus_alg = np.array(Sus_alg)
     Inf_alg = np.array(Inf_alg)
     Rec_alg = np.array(Rec_alg)
-    
+
     # plotting
     plot_models(T, S, I0, x, Inf_log, Inf_alg,
                 title='SIR model: Infections',
@@ -303,38 +304,46 @@ def SIR_log(T, S0, I0, R0, b, c):  # logistic model
     Sus = [S0]
     Inf = [I0]
     Rec = [R0]
+    P = S0+I0+R0
     for t in range(T):
-        Sus.append(Sus[t] - b*Sus[t]*Inf[t])
-        Inf.append(Inf[t] + b*Sus[t]*Inf[t] - c*Inf[t])
-        Rec.append(Rec[t] + c*Inf[t])
-    return np.array(Sus), np.array(Sus), np.array(Rec)
+        sus = Sus[t] - b*Sus[t]*Inf[t]
+        inf = Inf[t] + b*Sus[t]*Inf[t] - c*Inf[t]
+        rec = Rec[t] + c*Inf[t]
+        sus_new = sus if sus > 0 else 0
+        sus_new = sus_new if sus_new < P else P
+        inf_new = inf if inf > 0 else 0
+        inf_new = inf_new if inf_new < P else P
+        rec_new = rec if rec > 0 else 0
+        rec_new = rec_new if rec_new < P else P
+        Sus.append(sus_new)
+        Inf.append(inf_new)
+        Rec.append(rec_new)
+    return np.array(Sus), np.array(Inf), np.array(Rec)
 
 
 def SIR_alg(T, S0, I0, R0, b, c):  # algorithm realizations
     S = [S0]
     I = [I0]
     R = [R0]
+    P = S0+I0+R0
     t_ex = T
     for t in range(T):
         # num = k-sized list of population elements chosen with replacement
-        # TODO
-        S_down = random.choices([1, 0], weights=[b*I[t], 1-b*I[t]], k=S[t])
-        #I_up = random.choices([2, 1], weights=[b*S[t], 1-b*S[t]], k=I[t])
+        prob = b*I[t] if b*I[t] < 1 else 1  # TODO
+        S_down = random.choices([1, 0], weights=[prob, 1-prob], k=S[t])
         I_down = random.choices([1, 0], weights=[c, 1-c], k=I[t])
-        #R_up = random.choices([2, 1], weights=[c*I[t], 1-c*I[t]], k=R[t])
         # sum = new population size
         S.append(int(S[t]-np.sum(S_down)))
         I.append(int(I[t]+int(np.sum(S_down))-int(np.sum(I_down))))
         R.append(R[t]+int(np.sum(I_down)))
         if I[t+1] <= 0:
-            t_ex = t
+            t_ex = t+1
             break
-    
-    N_fill = np.zeros(T-t_ex-1)  # TODO
+
+    N_fill = np.zeros(T-t_ex)  # TODO
     S = np.append(S, N_fill)
     I = np.append(I, N_fill)
     R = np.append(R, N_fill)
-    print(len(S), len(I), len(R))
     return np.array(S), np.array(I), np.array(R)
 
 
@@ -364,19 +373,19 @@ def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
     # logistic model
     l1, = plt.plot(x, y_log, lw=2, c='k',
                    label='mean-field equations (logistic model)')
-    
+
     # algorithm realizations
     for s in range(S):
         l2, = plt.plot(x, Y_alg[s], 'o-', ms=2, zorder=-1,
                        label='Marcov process (Gillespie algorithm)')
-    
+
     # algorithm mean+std
     Y_alg_mean = np.mean(Y_alg, axis=0)
     Y_alg_std = np.std(Y_alg, axis=0)
     l3 = plt.errorbar(x, Y_alg_mean, fmt='o', c='k', ms=5,  # yerr=[],
                       yerr=Y_alg_std, ecolor='gray', errorevery=3,
                       label=r'$\left< N(t) \right>$ mean+std of '
-                            + str(S)+' Markov realizations')
+                      + str(S)+' Markov realizations')
     # layout
     plt.xlabel('time')
     plt.ylabel(ylabel)
