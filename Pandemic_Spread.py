@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 from scipy.optimize import curve_fit
+import scipy.integrate as integrate
 
 
 def Task_1(T, S):  # death process
@@ -266,7 +267,84 @@ def N3_alg(T, N0, l, d):  # algorithm realizations
 
 
 def Task_4(T, S):  # SIR model
-    pass
+
+    # initial parameters
+    b = 0.02  # infection
+    c = 0.3   # recovery
+    S0 = 30
+    I0 = 1
+    R0 = 0
+    x = np.arange(0, T+1)  # time axis
+
+    # logistic model
+    Sus_log, Inf_log, Rec_log = SIR_log(T, S0, I0, R0, b, c)
+
+    # algorithm realizations
+    Sus_alg, Inf_alg, Rec_alg = [], [], []
+    for s in range(S):
+        random.seed(s)
+        Sus, Inf, Rec = SIR_alg(T, S0, I0, R0, b, c)
+        Sus_alg.append(Sus)
+        Inf_alg.append(Inf)
+        Rec_alg.append(Rec)
+    Sus_alg = np.array(Sus_alg)
+    Inf_alg = np.array(Inf_alg)
+    Rec_alg = np.array(Rec_alg)
+
+    # plotting
+    plot_models(T, S, I0, x, Inf_log, Inf_alg,
+                title='SIR model: Infections',
+                ylabel='number of infected persons $I$',
+                ax2_ticks=[0, I0, Inf_log[-1]],
+                ax2_ticklabels=['0', '$I_0$', '$I_e$'])
+    plt.show()
+
+
+def SIR_log(T, S0, I0, R0, b, c):  # logistic model
+    Sus = [S0]
+    Inf = [I0]
+    Rec = [R0]
+    P = S0+I0+R0
+    for t in range(T):
+        sus = Sus[t] - b*Sus[t]*Inf[t]
+        inf = Inf[t] + b*Sus[t]*Inf[t] - c*Inf[t]
+        rec = Rec[t] + c*Inf[t]
+        sus_new = sus if sus > 0 else 0
+        sus_new = sus_new if sus_new < P else P
+        inf_new = inf if inf > 0 else 0
+        inf_new = inf_new if inf_new < P else P
+        rec_new = rec if rec > 0 else 0
+        rec_new = rec_new if rec_new < P else P
+        Sus.append(sus_new)
+        Inf.append(inf_new)
+        Rec.append(rec_new)
+    return np.array(Sus), np.array(Inf), np.array(Rec)
+
+
+def SIR_alg(T, S0, I0, R0, b, c):  # algorithm realizations
+    S = [S0]
+    I = [I0]
+    R = [R0]
+    P = S0+I0+R0
+    t_ex = T
+    for t in range(T):
+        # num = k-sized list of population elements chosen with replacement
+        prob = b*I[t] if b*I[t] < 1 else 1  # TODO
+        S_down = random.choices([1, 0], weights=[prob, 1-prob], k=S[t])
+        I_down = random.choices([1, 0], weights=[c, 1-c], k=I[t])
+        # sum = new population size
+        S.append(int(S[t]-np.sum(S_down)))
+        I.append(int(I[t]+int(np.sum(S_down))-int(np.sum(I_down))))
+        R.append(R[t]+int(np.sum(I_down)))
+        if I[t+1] <= 0:
+            t_ex = t+1
+            break
+
+    N_fill = np.zeros(T-t_ex)  # TODO
+    S = np.append(S, N_fill)
+    I = np.append(I, N_fill)
+    R = np.append(R, N_fill)
+    return np.array(S), np.array(I), np.array(R)
 
 
 def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
@@ -295,17 +373,19 @@ def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
     # logistic model
     l1, = plt.plot(x, y_log, lw=2, c='k',
                    label='mean-field equations (logistic model)')
+
     # algorithm realizations
     for s in range(S):
         l2, = plt.plot(x, Y_alg[s], 'o-', ms=2, zorder=-1,
                        label='Marcov process (Gillespie algorithm)')
+
     # algorithm mean+std
     Y_alg_mean = np.mean(Y_alg, axis=0)
     Y_alg_std = np.std(Y_alg, axis=0)
     l3 = plt.errorbar(x, Y_alg_mean, fmt='o', c='k', ms=5,  # yerr=[],
                       yerr=Y_alg_std, ecolor='gray', errorevery=3,
                       label=r'$\left< N(t) \right>$ mean+std of '
-                            + str(S)+' Markov realizations')
+                      + str(S)+' Markov realizations')
     # layout
     plt.xlabel('time')
     plt.ylabel(ylabel)
@@ -320,6 +400,5 @@ def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
 if __name__ == '__main__':
     # Task_1(T=60, S=10)
     # Task_2(T=600, S=300)
-
-    Task_3(T=1000, S=1000)
-    Task_4(T=10, S=10)
+    # Task_3(T=1000, S=1000)
+    Task_4(T=60, S=500)
