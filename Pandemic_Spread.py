@@ -31,13 +31,14 @@ def Task_1(T, S):  # death process
     Y_alg = np.array(Y_alg)
 
     # plotting
-    plot_models(T, S, N0, x, y_log, Y_alg,
-                title='death process with rate $r={}$'.format(r),
-                ylabel='number of particles $N$',
-                ax2_ticks=[0, N0], ax2_ticklabels=['0', '$N_0$'])
+    fig_T1, ax_T1 = plot_models(T, S, N0, x, y_log, Y_alg,
+                                title='death process with rate $r={}$'.format(r),
+                                ylabel='number of particles $N$',
+                                ax2_ticks=[0, N0], ax2_ticklabels=['0', '$N_0$'])
 
-    plt.yticks(np.arange(0, N0+2, step=np.round(N0/10)))  # only integers
+    ax_T1.set_yticks(np.arange(0, N0+2, step=np.round(N0/10)))  # only integers
     plt.show()
+    fig_T1.savefig('Task1.pdf', bbox_inches='tight', dpi=300, transparent= False)
 
 
 def N_log(T, r, N0):  # logistic model
@@ -71,51 +72,59 @@ def Task_2(T, S):  # gene expression
 
     # logistic model
     y_log, t_break = P_log(T, Po, Mo, l_m, d_m, l_p, d_p)
-
+    
     # algorithm realizations
     Y_alg = []
     for s in range(S):
         random.seed(s)
         Y_alg.append(P_alg(T, d_m, d_p, Mo, Po))
     Y_alg = np.array(Y_alg)
-
+    
     # plotting
-    plot_models(T, S, Po, x, y_log, Y_alg,
-                title='gene expression for a single cell',
-                ylabel='number of protein particles $P$',
-                ax2_ticks=[0, Po, y_log[-1]],
-                ax2_ticklabels=['0', '$P_0$', '$P_e$'])
-
+    fig_T2, ax_T2 = plot_models(T, S, Po, x, y_log, Y_alg,
+                                title='gene expression for a single cell',
+                                ylabel='number of protein particles $P$',
+                                ax2_ticks=[0, Po, y_log[-1]],
+                                ax2_ticklabels=['0', '$P_0$', '$P_e$'])
+    
     plt.show()
+    fig_T2.savefig('Task2.pdf', bbox_inches='tight', dpi=300, transparent= False)
 
     w_P = np.array([Y_alg[s][t_break:] for s in range(S)]).flatten()
     P = np.array(range(w_P.min(), w_P.max()))
     Pm = l_m*l_p/(d_m*d_p)
     sigma2 = Pm*(1+l_p/(d_m+d_p))
     w_P_f = 1/(np.sqrt(2*np.pi*sigma2)) * np.exp(-(P-Pm)**2/(2*sigma2))
-
-    plt.figure()
-    plt.hist(w_P, bins=int(len(P)), density=True, histtype='step',
+    
+    fig_T2_dens, ax_T2_dens = plt.subplots(1,dpi=150)
+    ax_T2_dens.hist(w_P, bins=int(len(P)), density=True, histtype='step',
              label='P')
-    plt.plot(P, w_P_f)
-    plt.xlabel('$P$')
-    plt.ylabel('$w(P)$')
-    plt.title('equilibrium distribution density of $P$')
-    plt.show()
+    ax_T2_dens.plot(P, w_P_f)
+    ax_T2_dens.set(xlabel= '$P$',
+                   ylabel= '$w(P)$',
+                   title= 'equilibrium distribution density of $P$')
+    fig_T2_dens.savefig('Task2_density.pdf', bbox_inches='tight', dpi=300, transparent= False)
 
-    plt.figure()
-    plt.hist(w_P, bins=int(len(P)), density=True, histtype='step',
+    fig_T2_dens_log, ax_T2_dens_log = plt.subplots(1,dpi=150)
+
+    ax_T2_dens_log.hist(w_P, bins=int(len(P)), density=True, histtype='step',
              label='P')
-    plt.plot(P, w_P_f)
-    plt.yscale('log')
-    plt.xlabel('$P$')
-    plt.ylabel('$w(P)$')
-    plt.title('equilibrium distribution density of $P$\n logarithmic scale')
-    plt.show()
+    ax_T2_dens_log.plot(P, w_P_f)
+    ax_T2_dens_log.set(yscale= 'log',
+                       xlabel= '$P$',
+                       ylabel= '$w(P)$',
+                       title= 'equilibrium distribution density of $P$\n logarithmic scale')
+    
+    fig_T2_dens_log.savefig('Task2_density_log.pdf', bbox_inches='tight', dpi=300, transparent= False)
 
     skew = np.sum(((w_P-np.mean(w_P))/np.std(w_P))**3)/w_P.size
     kurt = np.sum(((w_P-np.mean(w_P))/np.std(w_P))**4)/w_P.size
-    print('skewness = '+str(skew)+'; kurtosis = '+str(kurt))
+    txt_skew_kurt =f'skewness = {skew}\nkurtosis = {kurt}'
+    print(txt_skew_kurt)
+    txt_T2 = open("Task2 skewness+kurtosis.txt", "w")
+    txt_T2.write(txt_skew_kurt)
+    txt_T2.close()
+    
 
 
 def M_log(T, Mo, l_m, d_m):  # logistic model
@@ -134,7 +143,7 @@ def P_log(T, Po, Mo, l_m, d_m, l_p, d_p):  # logistic model
         dP = l_p*M[t] - d_p*P[t]
         P.append(P[t] + dP)  # mean field eq
         if dP < 1e-3 and i == 0:
-            print(t)
+            print(f'break after {t} steps')
             t_break = t
             i = 1
     return np.array(P), t_break
@@ -147,7 +156,7 @@ def P_alg(T, d_m, d_p, Mo, Po):  # algorithm realizations
         # num = k-sized list of population elements chosen with replacement
         M_down = random.choices([0, 1], weights=[d_m, 1-d_m], k=M[t])
         P_down = random.choices([0, 1], weights=[d_p, 1-d_p], k=P[t])
-        # sum = new population siz
+        # sum = new population size
         M.append(int(np.sum(M_down)+1))
         P.append(int(np.sum(P_down)+M[t]))
     return np.array(P)
@@ -163,7 +172,11 @@ def Task_3(T, S):  # Verhulst extinction
     t_ex_std = []
     t_extinction = []
     N0_range = range(10, 22+1)
-    print('N_0 range:', N0_range[0], N0_range[-1])
+    range_txt = f'N_0 range: {N0_range[0]}:{N0_range[-1]}'
+    print(range_txt)
+    
+    txt_T3 = open("Task3.txt", "w")
+    txt_T3.write(range_txt+'\n')
     for N0 in N0_range:
         # logistic model
         y_log, t_ex_log = N3_log(T, N0, l, d)
@@ -195,39 +208,44 @@ def Task_3(T, S):  # Verhulst extinction
 
         # plt.yticks(np.arange(0, N0+2, step=np.round(N0/10)))  # only integers
 
-    plt.show()
+    
 
     t_extinction = np.array(t_extinction)
     t_ex_mean = np.mean(t_extinction, axis=1)
     t_ex_std = np.std(t_extinction, axis=1)
 
-    fig, ax = plt.subplots(figsize=(8.4, 4.8))
-    ax.plot(N0_range, t_extinction, alpha=.5,
+    fig_T3_extinct, ax_T3 = plt.subplots(figsize=(8.4, 4.8))
+    ax_T3.plot(N0_range, t_extinction, alpha=.5,
             zorder=-1)
-    l1, = plt.plot([], [], label=str(S)+' Markov samples',
+    l1, = ax_T3.plot([], [], label=str(S)+' Markov samples',
                    c='tab:blue')  # for legend
-    l2 = plt.errorbar(N0_range, t_ex_mean, yerr=t_ex_std,
+    l2 = ax_T3.errorbar(N0_range, t_ex_mean, yerr=t_ex_std,
                       fmt='o', c='k', ms=5, zorder=1, label='sample mean')
 
     # logistic fit
     t_ex_std[t_ex_std == 0] = 1  # replace zeros as we need 1/std for fitting
     popt, pcov = curve_fit(log, N0_range, t_ex_mean, p0=[.5, 19, 130],
                            sigma=t_ex_std, absolute_sigma=True)
-    print('k, x0, N =', *popt)
-    l3, = plt.plot(N0_range, log(N0_range, *popt), '--k', label='logistic fit')
-    # l4, = plt.plot(N0_range, log(N0_range, 0.56, 19.5, 131.7),
+    
+    fit_txt = f'k, x0, N = {popt}'
+    print(fit_txt)
+    txt_T3.write(fit_txt)
+    txt_T3.close()
+    
+    l3, = ax_T3.plot(N0_range, log(N0_range, *popt), '--k', label='logistic fit')
+    # l4, = ax_T3.plot(N0_range, log(N0_range, 0.56, 19.5, 131.7),
     #                '--b', label='Lena\'s fit')
 
-    plt.xlabel('$N_0$')
-    plt.ylabel('mean extinction time $T_{ext}$')
-    plt.title('Verhulst process mean extinction time')
-    plt.legend(handles=[l1, l2, l3])
+    ax_T3.set(xlabel= '$N_0$',
+              ylabel= 'mean extinction time $T_{ext}$',
+              title= 'Verhulst process mean extinction time')
+    ax_T3.legend(handles=[l1, l2, l3])
 
-    ax2 = ax.twinx()  # secondary axis for additional labels
-    ax2.set_ylim(ax.get_ylim())  # same ylim
-    ax2.set_yticks([0, popt[2]])
+    ax_T3_2 = ax_T3.twinx()  # secondary axis for additional labels
+    ax_T3_2.set(ylim= ax_T3.get_ylim(),  # same ylim
+                yticks=[0, popt[2]])
+    fig_T3_extinct.savefig('Task3_extinct.pdf', bbox_inches='tight', dpi=300, transparent= False)
 
-    plt.show()
 
 
 def log(x, k, x0, N):
@@ -292,12 +310,13 @@ def Task_4(T, S):  # SIR model
     Rec_alg = np.array(Rec_alg)
 
     # plotting
-    plot_models(T, S, I0, x, Inf_log, Inf_alg,
-                title='SIR model: Infections',
-                ylabel='number of infected persons $I$',
-                ax2_ticks=[0, I0, Inf_log[-1]],
-                ax2_ticklabels=['0', '$I_0$', '$I_e$'])
-    plt.show()
+    fig_T4, ax_T4 = plot_models(T, S, I0, x, Inf_log, Inf_alg,
+                                title='SIR model: Infections',
+                                ylabel='number of infected persons $I$',
+                                ax2_ticks=[0, I0, Inf_log[-1]],
+                                ax2_ticklabels=['0', '$I_0$', '$I_e$'])
+    fig_T4.savefig('Task4.pdf', bbox_inches='tight', dpi=300, transparent= False)
+
 
 
 def SIR_log(T, S0, I0, R0, b, c):  # logistic model
@@ -368,7 +387,7 @@ def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
         Plot title.
     """
 
-    fig, ax = plt.subplots(figsize=(8.4, 4.8))
+    fig, ax = plt.subplots(figsize=(8.4, 4.8),dpi=150)
 
     # logistic model
     l1, = plt.plot(x, y_log, lw=2, c='k',
@@ -395,10 +414,11 @@ def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
     ax2.set_ylim(ax.get_ylim())  # same ylim
     ax2.set_yticks(ax2_ticks)
     ax2.set_yticklabels(ax2_ticklabels)
-
+    
+    return fig, ax
 
 if __name__ == '__main__':
-    # Task_1(T=60, S=10)
-    # Task_2(T=600, S=300)
-    # Task_3(T=1000, S=1000)
+    Task_1(T=60, S=10)
+    Task_2(T=600, S=300)
+    Task_3(T=1000, S=1000)
     Task_4(T=60, S=500)
