@@ -8,6 +8,8 @@ https://docs.python.org/3/library/random.html
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.pylab as pl
+
 import random
 from scipy.optimize import curve_fit
 import scipy.integrate as integrate
@@ -16,22 +18,26 @@ import scipy.integrate as integrate
 def Task_1(T, S):  # death process
 
     # initial parameters
-    N0 = 20  # time span
+    N0 = 20  # starting population number
     r = 0.1  # decay rate
-    x = np.arange(0, T+1)  # time axis
+    rates = {"1" : r}
+    t_log = np.arange(0, T+1)  # time axis
 
     # logistic model
     y_log = N_log(T, r, N0)
 
     # algorithm realizations
     Y_alg = []
+    t_alg = []
     for s in range(S):
-        random.seed(s)
-        Y_alg.append(N_alg(T, r, N0))
+        t, N = Gillespie_N_alg(T, rates, N0, s)
+        t_alg.append(t)
+        Y_alg.append(N)
+    t_alg = np.array(t_alg)
     Y_alg = np.array(Y_alg)
-
+    
     # plotting
-    fig_T1, ax_T1 = plot_models(T, S, N0, x, y_log, Y_alg,
+    fig_T1, ax_T1 = plot_models(T, S, N0, t_log, y_log,t_alg, Y_alg,
                                 title='death process with rate $r={}$'.format(r),
                                 ylabel='number of particles $N$',
                                 ax2_ticks=[0, N0], ax2_ticklabels=['0', '$N_0$'])
@@ -57,6 +63,58 @@ def N_alg(T, r, N0):  # algorithm realizations
         N.append(int(np.sum(num)))
     return np.array(N)
 
+
+def Rates_to_list(rates, N):
+    """
+    rates - dictionary of form {"expr":value}
+    N - list of numbers representing current state 
+    taking "expr" to calculate rates of current state
+    current_rate = expr*value
+    """
+    # rates - dictionary containing expression of rate calculation as name and rate value as value
+    rate_vals = []
+    for i in list(rates):
+        expr = eval(i)
+        rate_vals.append(expr*rates[i])
+    
+    return rate_vals
+   
+    
+def Gillespie_N_alg(T,rates,N0,s=None):
+    # T - max time
+    # rates - dictionary containing expression of rate calculation as name and rate value as value
+    # N0 - initial population
+    # s - seed for random number generator
+    
+    t = [0]
+    N = [N0]
+    
+    rng = np.random.default_rng(seed=s)
+    
+    while t[-1] < T:
+        
+        rate_list = Rates_to_list(rates,N[-1])
+        rate_sum = np.sum(rate_list)
+        
+        tau = rng.exponential(scale=1/rate_sum)
+        if tau<=0:
+            print (tau)
+        t.append(t[-1]+tau)
+        
+        
+        # rates
+        # # delta_N = rate weighted choice if 1 individuum dies
+        # delta_N = random.choices([-1, 0], weights=[rates[0], 1-rates[0]], k=1)
+        # new population number
+        N.append(N[-1]-1)
+        if N[-1]== 0:
+            break
+       
+    return t, N
+        
+        
+
+    
 
 def Task_2(T, S):  # gene expression
 
@@ -366,7 +424,7 @@ def SIR_alg(T, S0, I0, R0, b, c):  # algorithm realizations
     return np.array(S), np.array(I), np.array(R)
 
 
-def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
+def plot_models(T, S, N0, t_log, y_log, t_alg, Y_alg, title, ylabel,
                 ax2_ticks, ax2_ticklabels):
     """
     General plotting function.
@@ -381,8 +439,10 @@ def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
         Initial number of particles N_0.
     y_log : 1D array
         logistic model from mean-field equations.
+    t_alg : 2D array
+        times of Gillespie algorithm realizations from Marcov process.
     Y_alg : 2D array
-        Gillespie algorithm realizations from Marcov process.
+        Population values of Gillespie algorithm realizations from Marcov process.
     title : str
         Plot title.
     """
@@ -390,19 +450,25 @@ def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
     fig, ax = plt.subplots(figsize=(8.4, 4.8),dpi=150)
 
     # logistic model
-    l1, = plt.plot(x, y_log, lw=2, c='k',
+    l1, = plt.plot(t_log, y_log, lw=2, c='k',
                    label='mean-field equations (logistic model)')
 
     # algorithm realizations
+    Oranges = pl.cm.Oranges(np.linspace(0.1,1,S))
+    j=0
     for s in range(S):
-        l2, = plt.plot(x, Y_alg[s], 'o-', ms=2, zorder=-1,
+        l2, = plt.plot(t_alg[s], Y_alg[s], 'o-', ms=2, zorder=-1,
+                       color= Oranges[j],
                        label='Marcov process (Gillespie algorithm)')
+        j+=1
 
     # algorithm mean+std
+    t_alg_mean = np.mean(t_alg, axis=0)
+    t_alg_std = np.std(t_alg, axis=0)    
     Y_alg_mean = np.mean(Y_alg, axis=0)
     Y_alg_std = np.std(Y_alg, axis=0)
-    l3 = plt.errorbar(x, Y_alg_mean, fmt='o', c='k', ms=5,  # yerr=[],
-                      yerr=Y_alg_std, ecolor='gray', errorevery=3,
+    l3 = plt.errorbar(t_alg_mean, Y_alg_mean, fmt= 'o', c= 'k', ms= 5,  # yerr=[],
+                      xerr= t_alg_std, yerr= Y_alg_std, ecolor= 'gray', errorevery= 3,
                       label=r'$\left< N(t) \right>$ mean+std of '
                       + str(S)+' Markov realizations')
     # layout
@@ -418,7 +484,7 @@ def plot_models(T, S, N0, x, y_log, Y_alg, title, ylabel,
     return fig, ax
 
 if __name__ == '__main__':
-    Task_1(T=60, S=10)
-    Task_2(T=600, S=300)
-    Task_3(T=1000, S=1000)
-    Task_4(T=60, S=500)
+    Task_1(T=800, S=30)
+    # Task_2(T=600, S=300)
+    # Task_3(T=1000, S=1000)
+    # Task_4(T=60, S=500)
