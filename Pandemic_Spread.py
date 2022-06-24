@@ -20,7 +20,7 @@ def Task_1(T, S):  # death process
     # initial parameters
     N0 = 20  # starting population number
     r = 0.1  # decay rate
-    rates = {"1" : r}
+    rates = [{"1" : r}]
     t_log = np.arange(0, T+1)  # time axis
 
     # logistic model
@@ -66,26 +66,42 @@ def N_alg(T, r, N0):  # algorithm realizations
 
 def Rates_to_list(rates, N):
     """
-    rates - dictionary of form {"expr":value}
-    N - list of numbers representing current state 
     taking "expr" to calculate rates of current state
     current_rate = expr*value
+    Parameters
+    ----------
+    rates : list of dictionaries of form {"expr":value}
+            each dictionary is representing a mean field equation
+    N : tuple
+        of numbers representing current state 
     """
-    # rates - dictionary containing expression of rate calculation as name and rate value as value
-    rate_vals = []
-    for i in list(rates):
-        expr = eval(i)
-        rate_vals.append(expr*rates[i])
     
+    rate_vals = []
+    for dic in rates:
+        dic_vals = []
+        for i in list(dic):
+            expr = eval(i)
+            dic_vals.append(expr*dic[i])
+        rate_vals.append(dic_vals)
+        
     return rate_vals
    
     
 def Gillespie_N_alg(T,rates,N0,s=None):
-    # T - max time
-    # rates - dictionary containing expression of rate calculation as name and rate value as value
-    # N0 - initial population
-    # s - seed for random number generator
-    
+    """
+    Gillespie algorithm for Task 1
+    Parameters
+    ----------
+    T : int
+        max. time
+    rates : list of dictionaries 
+            of form {"expr":value}
+    N0 : int or tuple
+        numbers representing initial state 
+    s : int
+        seed for random number generator
+    """
+
     t = [0]
     N = [N0]
     
@@ -93,12 +109,10 @@ def Gillespie_N_alg(T,rates,N0,s=None):
     
     while t[-1] < T:
         
-        rate_list = Rates_to_list(rates,N[-1])
+        rate_list = Rates_to_list(rates,N[-1])[0]
         rate_sum = np.sum(rate_list)
         
         tau = rng.exponential(scale=1/rate_sum)
-        if tau<=0:
-            print (tau)
         t.append(t[-1]+tau)
         
         
@@ -121,25 +135,34 @@ def Task_2(T, S):  # gene expression
     # initial parameters
     Mo = 20  # M(0)
     Po = 20  # P(0)
+    N0 = (Mo,Po)
     l_m = 1
     d_m = 0.2
     l_p = 1
     d_p = 0.02
-
+    rates = [{"1" : l_m,
+             "N[0]" : d_m},
+             {"N[0]" : l_p,
+             "N[1]" : d_p}]
     x = np.arange(0, T+1)  # time axis
 
     # logistic model
     y_log, t_break = P_log(T, Po, Mo, l_m, d_m, l_p, d_p)
     
     # algorithm realizations
+    t_alg = []
     Y_alg = []
     for s in range(S):
-        random.seed(s)
-        Y_alg.append(P_alg(T, d_m, d_p, Mo, Po))
+        #random.seed(s)
+        Gillespie_P_alg
+        t, P = Gillespie_P_alg(T, rates, N0, s)
+        t_alg.append(t)
+        Y_alg.append(P)
+    t_alg = np.array(t_alg)
     Y_alg = np.array(Y_alg)
     
     # plotting
-    fig_T2, ax_T2 = plot_models(T, S, Po, x, y_log, Y_alg,
+    fig_T2, ax_T2 = plot_models(T, S, Po, x, y_log, t_alg, Y_alg,
                                 title='gene expression for a single cell',
                                 ylabel='number of protein particles $P$',
                                 ax2_ticks=[0, Po, y_log[-1]],
@@ -219,6 +242,52 @@ def P_alg(T, d_m, d_p, Mo, Po):  # algorithm realizations
         P.append(int(np.sum(P_down)+M[t]))
     return np.array(P)
 
+def Gillespie_P_alg(T,rates,N0,s=None):
+    """
+    Gillespie algorithm for Task 1
+    Parameters
+    ----------
+    T : int
+        max. time
+    rates : list of dictionaries 
+            of form {"expr":value}
+    N0 : tuple
+         numbers representing initial state 
+    s : int
+        seed for random number generator
+    """
+    
+    t = [0]
+    N = [N0]
+    P = [N0[0]]
+    rng = np.random.default_rng(seed=s)
+    i=0
+    while i < T*7:#t[-1] < T:
+        N_now = N[-1]
+        rates_list = Rates_to_list(rates,N_now)
+        
+        rates_flat = np.array(rates_list).flatten()
+        rate_sum = np.sum(rates_flat)
+        
+        tau = rng.exponential(scale=1/rate_sum)
+        t.append(t[-1]+tau)
+        
+        # pick random number to determine event thats happening
+        event_prob = rates_flat/rate_sum
+        event_number = rng.choice(4,p=event_prob)
+        if event_number == 0:
+            N_next = (N_now[0]+1,N_now[1])
+        elif event_number == 1:
+            N_next = (N_now[0]-1,N_now[1])
+        elif event_number == 2:
+            N_next = (N_now[0],N_now[1]+1)
+        elif event_number == 3:
+            N_next = (N_now[0],N_now[1]-1)
+        
+        N.append(N_next)
+        P.append(N_next[0])
+        i+=1
+    return t, P
 
 def Task_3(T, S):  # Verhulst extinction
 
@@ -484,7 +553,7 @@ def plot_models(T, S, N0, t_log, y_log, t_alg, Y_alg, title, ylabel,
     return fig, ax
 
 if __name__ == '__main__':
-    Task_1(T=800, S=30)
-    # Task_2(T=600, S=300)
+    # Task_1(T=800, S=30)
+    Task_2(T=600, S=30)#S=300
     # Task_3(T=1000, S=1000)
     # Task_4(T=60, S=500)
