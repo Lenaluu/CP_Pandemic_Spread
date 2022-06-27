@@ -9,6 +9,7 @@ https://docs.python.org/3/library/random.html
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pl
+import sys
 
 import random
 from scipy.optimize import curve_fit
@@ -163,10 +164,10 @@ def Task_2(T, S):  # gene expression
     
     t_equal, Y_equal = [], []
     for idx in range(len(Y_alg)):
-        t_fill = list(np.zeros(max_len-len(t_alg[idx])))
+        t_fill = list(np.full(max_len-len(t_alg[idx]),np.nan))
         t_row = t_alg[idx]+t_fill
 
-        N_fill = list(np.zeros(max_len-len(Y_alg[idx])))
+        N_fill = list(np.full(max_len-len(Y_alg[idx]),np.nan))
         N_row = Y_alg[idx]+N_fill
         
         t_equal.append(t_row)
@@ -181,7 +182,6 @@ def Task_2(T, S):  # gene expression
                                 ax2_ticks=[0, Po, y_log[-1]],
                                 ax2_ticklabels=['0', '$P_0$', '$P_e$'])
     
-    breakpoint()
     plt.show()
     fig_T2.savefig('Task2.pdf', bbox_inches='tight', dpi=300, transparent= False)
 
@@ -287,6 +287,10 @@ def Gillespie_P_alg(T,rates,N0,s=None):
         t.append(t[-1]+tau)
         
         # pick random number to determine event thats happening
+        """
+        https://arxiv.org/pdf/2112.05293.pdf
+        direct method
+        """
         event_prob = rates_flat/rate_sum
         event_number = rng.choice(len(rates_flat),p=event_prob)
         if event_number == 0:
@@ -331,7 +335,7 @@ def Task_3(T, S):  # Verhulst extinction
         t_alg, Y_alg, t_ext = [], [], []
         max_len = 0
         for s in range(S):
-            t, N, t_ex = Gillespie_N3_alg(T,rates,N0,s=None)
+            t, N, t_ex = Gillespie_N3_alg(T,rates,N0,s=s)
             # N_alg, t_ex = N3_alg(T, N0, l, d)
             # N_fill = np.zeros(T-t_ex)
             # N_alg = np.append(N_alg, N_fill)
@@ -344,15 +348,15 @@ def Task_3(T, S):  # Verhulst extinction
         
         t_equal, Y_equal = [], []
         for idx in range(len(Y_alg)):
-            t_fill = list(np.zeros(max_len-len(t_alg[idx])))
+            t_fill = list(np.full(max_len-len(t_alg[idx]),np.nan))
             t_row = t_alg[idx]+t_fill
     
-            N_fill = list(np.zeros(max_len-len(Y_alg[idx])))
+            N_fill = list(np.full(max_len-len(Y_alg[idx]),np.nan))
             N_row = Y_alg[idx]+N_fill
             
             t_equal.append(t_row)
             Y_equal.append(N_row)
-            
+          
         t_alg = np.array(t_equal)   
         Y_alg = np.array(Y_equal)
         t_ext = np.array(t_ext)
@@ -447,7 +451,7 @@ def N3_alg(T, N0, l, d):  # algorithm realizations
 
 def Gillespie_N3_alg(T,rates,N0,s=None):
     """
-    Gillespie algorithm for Task 2
+    Gillespie algorithm for Task 3
     Parameters
     ----------
     T : int
@@ -501,24 +505,51 @@ def Task_4(T, S):  # SIR model
     I0 = 1
     R0 = 0
     x = np.arange(0, T+1)  # time axis
-
+    N0 = (S0,I0,R0)
+    rates =  [{"N[0]*N[1]" : b,
+               "N[1]" : c}]
+    
     # logistic model
     Sus_log, Inf_log, Rec_log = SIR_log(T, S0, I0, R0, b, c)
 
     # algorithm realizations
-    Sus_alg, Inf_alg, Rec_alg = [], [], []
+    t_alg, Sus_alg, Inf_alg, Rec_alg = [], [], [], []
+    max_len = 0
     for s in range(S):
         random.seed(s)
-        Sus, Inf, Rec = SIR_alg(T, S0, I0, R0, b, c)
+        # Sus, Inf, Rec = SIR_alg(T, S0, I0, R0, b, c)
+        t, Sus, Inf, Rec = Gillespie_SIR_alg(T,rates,N0,s=None)
+        t_alg.append(t)
         Sus_alg.append(Sus)
         Inf_alg.append(Inf)
         Rec_alg.append(Rec)
-    Sus_alg = np.array(Sus_alg)
-    Inf_alg = np.array(Inf_alg)
-    Rec_alg = np.array(Rec_alg)
+        if len(t) > max_len:
+            max_len = len(t)
+    
+    t_equal, Sus_equal, Inf_equal, Rec_equal = [], [], [], []
+    for idx in range(len(t_alg)):
+        t_fill = list(np.full(max_len-len(t_alg[idx]),np.nan))
+        t_row = t_alg[idx]+t_fill
+
+        Sus_fill = list(np.full(max_len-len(Sus_alg[idx]),np.nan))
+        Sus_row = Sus_alg[idx]+Sus_fill
+        Inf_fill = list(np.full(max_len-len(Inf_alg[idx]),np.nan))
+        Inf_row = Inf_alg[idx]+Inf_fill
+        Rec_fill = list(np.full(max_len-len(Rec_alg[idx]),np.nan))
+        Rec_row = Rec_alg[idx]+Rec_fill
+        
+        t_equal.append(t_row)
+        Sus_equal.append(Sus_row)
+        Inf_equal.append(Inf_row)
+        Rec_equal.append(Rec_row)
+        
+    t_alg = np.array(t_equal)    
+    Sus_alg = np.array(Sus_equal)
+    Inf_alg = np.array(Inf_equal)
+    Rec_alg = np.array(Rec_equal)
 
     # plotting
-    fig_T4, ax_T4 = plot_models(T, S, I0, x, Inf_log, Inf_alg,
+    fig_T4, ax_T4 = plot_models(T, S, I0, x, Inf_log, t_alg, Inf_alg,
                                 title='SIR model: Infections',
                                 ylabel='number of infected persons $I$',
                                 ax2_ticks=[0, I0, Inf_log[-1]],
@@ -573,6 +604,59 @@ def SIR_alg(T, S0, I0, R0, b, c):  # algorithm realizations
     R = np.append(R, N_fill)
     return np.array(S), np.array(I), np.array(R)
 
+def Gillespie_SIR_alg(T,rates,N0,s=None):
+    """
+    Gillespie algorithm for Task 4
+    Parameters
+    ----------
+    T : int
+        max. time
+    rates : list of dictionaries 
+            of form {"expr":value}
+    N0 : tuple
+         numbers representing initial state 
+    s : int
+        seed for random number generator
+    """
+    
+    t = [0]
+    S = [N0[0]]
+    I = [N0[1]]
+    R = [N0[2]]
+    rng = np.random.default_rng(seed=s)
+    
+    while t[-1] < T:
+        N_now = (S[-1], I[-1], R[-1])
+        rates_list = Rates_to_list(rates,N_now)
+        
+        rates_flat = np.array(rates_list).flatten()
+        rate_sum = np.sum(rates_flat)
+        
+        tau = rng.exponential(scale=1/rate_sum)
+        t.append(t[-1]+tau)
+        
+        # pick random number to determine event thats happening
+        """
+        https://arxiv.org/pdf/2112.05293.pdf
+        direct method
+        """
+        
+        event_prob = rates_flat/rate_sum
+        event_number = rng.choice(len(rates_flat),p=event_prob)
+        if event_number == 0:
+            S.append(S[-1]-1)
+            I.append(I[-1]+1)
+            R.append(R[-1])
+        elif event_number == 1:
+            S.append(S[-1])
+            I.append(I[-1]-1)
+            R.append(R[-1]+1)
+        else:
+            sys.exit("too much rates")
+        if I[-1] <= 0:
+            break
+
+    return t, S, I, R
 
 def plot_models(T, S, N0, t_log, y_log, t_alg, Y_alg, title, ylabel,
                 ax2_ticks, ax2_ticklabels):
@@ -614,10 +698,10 @@ def plot_models(T, S, N0, t_log, y_log, t_alg, Y_alg, title, ylabel,
 
 
     # algorithm mean+std
-    t_alg_mean = np.mean(t_alg, axis=0)
-    t_alg_std = np.std(t_alg, axis=0)    
-    Y_alg_mean = np.mean(Y_alg, axis=0)
-    Y_alg_std = np.std(Y_alg, axis=0)
+    t_alg_mean = np.nanmean(t_alg, axis=0)
+    t_alg_std = np.nanstd(t_alg, axis=0)    
+    Y_alg_mean = np.nanmean(Y_alg, axis=0)
+    Y_alg_std = np.nanstd(Y_alg, axis=0)
     l3 = plt.errorbar(t_alg_mean, Y_alg_mean, fmt= 'o', c= 'k', ms= 5,  # yerr=[],
                       xerr= t_alg_std, yerr= Y_alg_std, ecolor= 'gray', errorevery= 3,
                       label=r'$\left< N(t) \right>$ mean+std of '
@@ -636,7 +720,7 @@ def plot_models(T, S, N0, t_log, y_log, t_alg, Y_alg, title, ylabel,
 
 if __name__ == '__main__':
     # Task_1(T=800, S=30)
-    Task_2(T=60, S=30)#S=300
-    # Task_3(T=1000, S=10)#T=1000, S=1000
-    # Task_4(T=60, S=500)
+    # Task_2(T=60, S=30)#S=300
+    Task_3(T=2000, S=100)#T=1000, S=1000
+    # Task_4(T=100, S=500)#T=60, S=500
     pass
