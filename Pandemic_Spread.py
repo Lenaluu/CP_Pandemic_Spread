@@ -326,6 +326,7 @@ def Task_3(T, S):  # Verhulst extinction
     txt_T3 = open("Task3.txt", "w")
     txt_T3.write(range_txt+'\n')
     for N0 in N0_range:
+        print(f"start value: {N0}")
         # logistic model
         y_log, t_ex_log = N3_log(T, N0, l, d)
         y_fill = np.zeros(T-t_ex_log)
@@ -334,6 +335,7 @@ def Task_3(T, S):  # Verhulst extinction
         # algorithm realizations
         t_alg, Y_alg, t_ext = [], [], []
         max_len = 0
+        i= 1
         for s in range(S):
             t, N, t_ex = Gillespie_N3_alg(T,rates,N0,s=s)
             # N_alg, t_ex = N3_alg(T, N0, l, d)
@@ -342,8 +344,12 @@ def Task_3(T, S):  # Verhulst extinction
             t_alg.append(t)
             Y_alg.append(N)
             t_ext.append(t_ex)
+            if i % 5 == 0:
+                print(f"Sample {i}")
+            i+=1
             if len(N) > max_len:
                 max_len = len(N)
+        
                 
         
         t_equal, Y_equal = [], []
@@ -721,6 +727,6 @@ def plot_models(T, S, N0, t_log, y_log, t_alg, Y_alg, title, ylabel,
 if __name__ == '__main__':
     # Task_1(T=800, S=30)
     # Task_2(T=60, S=30)#S=300
-    Task_3(T=2000, S=100)#T=1000, S=1000
+    Task_3(T=2000, S=10)#T=1000, S=1000
     # Task_4(T=100, S=500)#T=60, S=500
     pass
