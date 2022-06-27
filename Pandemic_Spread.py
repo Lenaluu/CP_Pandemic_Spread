@@ -150,17 +150,30 @@ def Task_2(T, S):  # gene expression
     y_log, t_break = P_log(T, Po, Mo, l_m, d_m, l_p, d_p)
     
     # algorithm realizations
-    t_alg = []
-    Y_alg = []
+    t_alg, Y_alg = [], []
+    max_len = 0
     for s in range(S):
         #random.seed(s)
         Gillespie_P_alg
         t, P = Gillespie_P_alg(T, rates, N0, s)
         t_alg.append(t)
         Y_alg.append(P)
-    t_alg = np.array(t_alg)
-    Y_alg = np.array(Y_alg)
+        if len(P) > max_len:
+            max_len = len(P)
     
+    t_equal, Y_equal = [], []
+    for idx in range(len(Y_alg)):
+        t_fill = list(np.zeros(max_len-len(t_alg[idx])))
+        t_row = t_alg[idx]+t_fill
+
+        N_fill = list(np.zeros(max_len-len(Y_alg[idx])))
+        N_row = Y_alg[idx]+N_fill
+        
+        t_equal.append(t_row)
+        Y_equal.append(N_row)
+        
+    t_alg = np.array(t_equal)   
+    Y_alg = np.array(Y_equal)
     # plotting
     fig_T2, ax_T2 = plot_models(T, S, Po, x, y_log, t_alg, Y_alg,
                                 title='gene expression for a single cell',
@@ -168,6 +181,7 @@ def Task_2(T, S):  # gene expression
                                 ax2_ticks=[0, Po, y_log[-1]],
                                 ax2_ticklabels=['0', '$P_0$', '$P_e$'])
     
+    breakpoint()
     plt.show()
     fig_T2.savefig('Task2.pdf', bbox_inches='tight', dpi=300, transparent= False)
 
@@ -244,7 +258,7 @@ def P_alg(T, d_m, d_p, Mo, Po):  # algorithm realizations
 
 def Gillespie_P_alg(T,rates,N0,s=None):
     """
-    Gillespie algorithm for Task 1
+    Gillespie algorithm for Task 2
     Parameters
     ----------
     T : int
@@ -262,7 +276,7 @@ def Gillespie_P_alg(T,rates,N0,s=None):
     P = [N0[0]]
     rng = np.random.default_rng(seed=s)
     i=0
-    while i < T*7:#t[-1] < T:
+    while t[-1] < T:
         N_now = N[-1]
         rates_list = Rates_to_list(rates,N_now)
         
@@ -274,7 +288,7 @@ def Gillespie_P_alg(T,rates,N0,s=None):
         
         # pick random number to determine event thats happening
         event_prob = rates_flat/rate_sum
-        event_number = rng.choice(4,p=event_prob)
+        event_number = rng.choice(len(rates_flat),p=event_prob)
         if event_number == 0:
             N_next = (N_now[0]+1,N_now[1])
         elif event_number == 1:
@@ -295,6 +309,9 @@ def Task_3(T, S):  # Verhulst extinction
     x = np.arange(0, T+1)  # time axis
     l = 1
     d = 0.1
+    rates = [{"N[0]" : l,
+             "N[0]**2" : d}]
+    
     t_ex_mean = []
     t_ex_std = []
     t_extinction = []
@@ -311,15 +328,33 @@ def Task_3(T, S):  # Verhulst extinction
         y_log = np.append(y_log, y_fill)
 
         # algorithm realizations
-        Y_alg, t_ext = [], []
+        t_alg, Y_alg, t_ext = [], [], []
+        max_len = 0
         for s in range(S):
-            random.seed(s)
-            N_alg, t_ex = N3_alg(T, N0, l, d)
-            N_fill = np.zeros(T-t_ex)
-            N_alg = np.append(N_alg, N_fill)
-            Y_alg.append(N_alg)
+            t, N, t_ex = Gillespie_N3_alg(T,rates,N0,s=None)
+            # N_alg, t_ex = N3_alg(T, N0, l, d)
+            # N_fill = np.zeros(T-t_ex)
+            # N_alg = np.append(N_alg, N_fill)
+            t_alg.append(t)
+            Y_alg.append(N)
             t_ext.append(t_ex)
-        Y_alg = np.array(Y_alg)
+            if len(N) > max_len:
+                max_len = len(N)
+                
+        
+        t_equal, Y_equal = [], []
+        for idx in range(len(Y_alg)):
+            t_fill = list(np.zeros(max_len-len(t_alg[idx])))
+            t_row = t_alg[idx]+t_fill
+    
+            N_fill = list(np.zeros(max_len-len(Y_alg[idx])))
+            N_row = Y_alg[idx]+N_fill
+            
+            t_equal.append(t_row)
+            Y_equal.append(N_row)
+            
+        t_alg = np.array(t_equal)   
+        Y_alg = np.array(Y_equal)
         t_ext = np.array(t_ext)
 
         t_extinction.append(t_ext)
@@ -409,6 +444,52 @@ def N3_alg(T, N0, l, d):  # algorithm realizations
         # if t_ex == T:
         #     print('no extinction for N_0 =', N0)
     return np.array(N), t_ex
+
+def Gillespie_N3_alg(T,rates,N0,s=None):
+    """
+    Gillespie algorithm for Task 2
+    Parameters
+    ----------
+    T : int
+        max. time
+    rates : list of dictionaries 
+            of form {"expr":value}
+    N0 : tuple
+         numbers representing initial state 
+    s : int
+        seed for random number generator
+    """
+    
+    t = [0]
+    N = [N0]
+    rng = np.random.default_rng(seed=s)
+    t_ex = -1
+    i=0
+    while t[-1] < T:
+        N_now = N[-1]
+        rates_list = Rates_to_list(rates,(N_now,))
+        
+        rates_flat = np.array(rates_list).flatten()
+        rate_sum = np.sum(rates_flat)
+        
+        tau = rng.exponential(scale=1/rate_sum)
+        t.append(t[-1]+tau)
+        
+        # pick random number to determine event thats happening
+        event_prob = rates_flat/rate_sum
+        event_number = rng.choice(len(rates_flat),p=event_prob)
+        if event_number == 0:
+            N_next = N_now+1
+        elif event_number == 1:
+            N_next = N_now-1
+        
+        N.append(N_next)
+        if N_next <= 0:
+            t_ex = t[-1]
+            break
+            
+        i+=1
+    return t, N, t_ex
 
 
 def Task_4(T, S):  # SIR model
@@ -531,6 +612,7 @@ def plot_models(T, S, N0, t_log, y_log, t_alg, Y_alg, title, ylabel,
                        label='Marcov process (Gillespie algorithm)')
         j+=1
 
+
     # algorithm mean+std
     t_alg_mean = np.mean(t_alg, axis=0)
     t_alg_std = np.std(t_alg, axis=0)    
@@ -554,6 +636,7 @@ def plot_models(T, S, N0, t_log, y_log, t_alg, Y_alg, title, ylabel,
 
 if __name__ == '__main__':
     # Task_1(T=800, S=30)
-    Task_2(T=600, S=30)#S=300
-    # Task_3(T=1000, S=1000)
+    Task_2(T=60, S=30)#S=300
+    # Task_3(T=1000, S=10)#T=1000, S=1000
     # Task_4(T=60, S=500)
+    pass
